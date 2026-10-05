@@ -1,0 +1,1123 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Topgun Coffee · RPi 5 Classifier</title>
+  <style>
+    /* ==========================================================================
+       Apple OS Human Interface System Variables & Palette
+       - Light: Pure White (#FFFFFF) & System Gray 6 (#F2F2F7)
+       - Dark: System Elevated (#2C2C2E) & System Dark (#1C1C1E)
+       - Accents: iOS Blue (#007AFF), iOS Green (#34C759), iOS Amber (#FF9500), iOS Red (#FF3B30)
+       - Typography: Native System Font Stack (0 HTTP Requests)
+       - Squircle Geometry: rounded-[28px] outer, rounded-2xl inner, rounded-full pills
+       ========================================================================== */
+    :root {
+      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      
+      /* Light Mode Palette */
+      --page-bg: #F2F2F7;
+      --widget-bg: #FFFFFF;
+      --card-inset: #F2F2F7;
+      --card-inset-subtle: #E5E5EA;
+      --hairline: rgba(0, 0, 0, 0.05);
+      --hairline-heavy: rgba(0, 0, 0, 0.12);
+      --text-primary: #000000;
+      --text-secondary: #8E8E93;
+      --text-tertiary: #C7C7CC;
+      --shadow-widget: 0 14px 40px -6px rgba(0, 0, 0, 0.08), 0 4px 14px rgba(0, 0, 0, 0.03);
+      --shadow-inset: 0 1px 3px rgba(0, 0, 0, 0.03);
+      
+      /* iOS System Accents */
+      --ios-blue: #007AFF;
+      --ios-blue-rgb: 0, 122, 255;
+      --ios-green: #34C759;
+      --ios-green-rgb: 52, 199, 89;
+      --ios-amber: #FF9500;
+      --ios-red: #FF3B30;
+      --ios-red-rgb: 255, 59, 48;
+      
+      /* Geometry Tokens */
+      --r-widget: 28px;
+      --r-card: 16px;
+      --r-pill: 9999px;
+      --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    [data-theme="dark"] {
+      --page-bg: #000000;
+      --widget-bg: #2C2C2E;
+      --card-inset: #1C1C1E;
+      --card-inset-subtle: #242426;
+      --hairline: rgba(255, 255, 255, 0.05);
+      --hairline-heavy: rgba(255, 255, 255, 0.14);
+      --text-primary: #FFFFFF;
+      --text-secondary: #98989D;
+      --text-tertiary: #48484A;
+      --shadow-widget: 0 18px 48px -4px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
+      --shadow-inset: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    /* CSS Reset & Hardware-Accelerated Rendering */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-stack);
+      background-color: var(--page-bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px 48px;
+      transition: background-color 280ms var(--ease-apple);
+    }
+
+    /* Outer Apple OS Large Widget Frame */
+    .apple-widget {
+      width: 100%;
+      max-width: 580px;
+      background: var(--widget-bg);
+      border-radius: var(--r-widget);
+      border: 1px solid var(--hairline);
+      box-shadow: var(--shadow-widget);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      transition: background-color 280ms var(--ease-apple),
+                  border-color 280ms var(--ease-apple),
+                  box-shadow 280ms var(--ease-apple);
+    }
+
+    /* Widget Header */
+    .widget-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .widget-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #007AFF, #5856D6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.28);
+    }
+
+    .widget-title {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.4px;
+    }
+
+    .widget-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* Actions in Header (Settings view toggle + Theme switcher) */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-action-btn {
+      min-width: 44px;
+      min-height: 44px;
+      border: 1px solid var(--hairline);
+      background: var(--card-inset);
+      border-radius: var(--r-pill);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: transform 180ms ease, background-color 200ms ease;
+    }
+
+    .icon-action-btn:active {
+      transform: scale(0.92);
+    }
+
+    .icon-action-btn:focus-visible {
+      outline: 2px solid var(--ios-blue);
+      outline-offset: 2px;
+    }
+
+    /* Apple OS Inset Status Bar */
+    .status-bar-pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      background: var(--card-inset);
+      border: 1px solid var(--hairline);
+      border-radius: var(--r-pill);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ios-amber);
+      box-shadow: 0 0 8px var(--ios-amber);
+      transition: background-color 240ms ease, box-shadow 240ms ease;
+    }
+
+    .pulse-dot.connected {
+      background: var(--ios-green);
+      box-shadow: 0 0 8px var(--ios-green);
+      animation: applePulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .pulse-dot.error {
+      background: var(--ios-red);
+      box-shadow: 0 0 8px var(--ios-red);
+      animation: none;
+    }
+
+    @keyframes applePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.85); }
+    }
+
+    .btn-text-reconnect {
+      background: transparent;
+      border: none;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ios-blue);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: opacity 180ms ease;
+    }
+
+    .btn-text-reconnect:hover {
+      opacity: 0.8;
+    }
+
+    .btn-text-reconnect:focus-visible {
+      outline: 2px solid var(--ios-blue);
+    }
+
+    /* Inner Card - Rounded-2xl Squircle */
+    .inner-card {
+      background: var(--card-inset);
+      border-radius: var(--r-card);
+      border: 1px solid var(--hairline);
+      padding: 18px;
+      box-shadow: var(--shadow-inset);
+      transition: background-color 280ms var(--ease-apple);
+    }
+
+    /* Apple OS Segmented Control */
+    .segmented-control {
+      background: var(--card-inset-subtle);
+      border-radius: 10px;
+      padding: 3px;
+      display: flex;
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .segment-btn {
+      flex: 1;
+      min-height: 32px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: color 180ms ease, background-color 200ms ease, box-shadow 200ms ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .segment-btn.active {
+      background: var(--widget-bg);
+      color: var(--text-primary);
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .segment-btn:focus-visible {
+      outline: 2px solid var(--ios-blue);
+    }
+
+    /* KPI Metrics inside inner card */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      text-align: left;
+    }
+
+    .kpi-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .kpi-value {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+
+    .kpi-unit {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .kpi-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ios-green);
+      margin-top: 2px;
+    }
+
+    /* Drop Zone / Image Upload Area */
+    .drop-zone {
+      border: 1.5px dashed var(--hairline-heavy);
+      border-radius: 12px;
+      padding: 26px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 220ms ease;
+      background: var(--widget-bg);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--ios-blue);
+      background: rgba(var(--ios-blue-rgb), 0.04);
+      transform: translateY(-1px);
+    }
+
+    .upload-icon-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--r-pill);
+      background: var(--card-inset);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ios-blue);
+      margin-bottom: 10px;
+    }
+
+    .drop-zone h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .drop-zone p {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    input[type="file"] {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* Preview Area */
+    .preview-box {
+      margin-top: 14px;
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--hairline);
+      background: #000000;
+      max-height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-box img {
+      width: 100%;
+      max-height: 240px;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* Apple OS Primary Button (Min 44px target) */
+    .apple-btn-primary {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 14px;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      border-radius: var(--r-pill);
+      background: var(--ios-blue);
+      color: #FFFFFF;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(var(--ios-blue-rgb), 0.28);
+      transition: filter 180ms ease, transform 150ms ease, opacity 180ms ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .apple-btn-primary:hover:not(:disabled) {
+      filter: brightness(1.06);
+    }
+
+    .apple-btn-primary:active:not(:disabled) {
+      transform: scale(0.98);
+      filter: brightness(0.92);
+    }
+
+    .apple-btn-primary:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* Apple OS Inset List Settings Section */
+    .settings-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .setting-row {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .setting-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .setting-row:first-child {
+      padding-top: 0;
+    }
+
+    .setting-lead {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .setting-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF;
+    }
+
+    .setting-labels h4 {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -0.2px;
+    }
+
+    .setting-labels p {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    /* Apple Hardware-Accelerated Toggle Switch (Min 44px WCAG Target) */
+    .ios-switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 51px;
+      height: 44px;
+      cursor: pointer;
+    }
+
+    .ios-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .switch-track {
+      width: 51px;
+      height: 31px;
+      background-color: var(--card-inset-subtle);
+      border: 1px solid var(--hairline);
+      border-radius: var(--r-pill);
+      transition: background-color 240ms var(--ease-apple), border-color 240ms ease;
+      position: relative;
+    }
+
+    .switch-thumb {
+      width: 27px;
+      height: 27px;
+      background-color: #FFFFFF;
+      border-radius: var(--r-pill);
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.06);
+      transition: transform 240ms var(--ease-apple);
+    }
+
+    .ios-switch input:checked + .switch-track {
+      background-color: var(--ios-green);
+      border-color: var(--ios-green);
+    }
+
+    .ios-switch input:checked + .switch-track .switch-thumb {
+      transform: translateX(20px);
+    }
+
+    .ios-switch input:focus-visible + .switch-track {
+      outline: 2px solid var(--ios-blue);
+      outline-offset: 3px;
+    }
+
+    /* Result Card Details */
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .result-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: var(--r-pill);
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(var(--ios-green-rgb), 0.12);
+      color: var(--ios-green);
+    }
+
+    pre {
+      background: var(--widget-bg);
+      border: 1px solid var(--hairline);
+      border-radius: 10px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: var(--ios-blue);
+      overflow-x: auto;
+      max-height: 180px;
+    }
+
+    /* Toasts / Notifications */
+    .toast-pill {
+      margin-top: 12px;
+      padding: 9px 14px;
+      border-radius: var(--r-pill);
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(var(--ios-blue-rgb), 0.1);
+      color: var(--ios-blue);
+      border: 1px solid rgba(var(--ios-blue-rgb), 0.2);
+    }
+
+    .toast-pill.error {
+      background: rgba(var(--ios-red-rgb), 0.1);
+      color: var(--ios-red);
+      border-color: rgba(var(--ios-red-rgb), 0.2);
+    }
+
+    .toast-pill.success {
+      background: rgba(var(--ios-green-rgb), 0.1);
+      color: var(--ios-green);
+      border-color: rgba(var(--ios-green-rgb), 0.2);
+    }
+
+    .hidden { display: none !important; }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =========================================================
+       Apple OS Widget Container (rounded-[28px])
+       ========================================================= -->
+  <main class="apple-widget" role="region" aria-label="Topgun Coffee Classifier Widget">
+    
+    <!-- Top Header: Identity & iOS System Controls -->
+    <header class="widget-header">
+      <div class="widget-title-group">
+        <div class="app-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+            <line x1="6" y1="1" x2="6" y2="4"></line>
+            <line x1="10" y1="1" x2="10" y2="4"></line>
+            <line x1="14" y1="1" x2="14" y2="4"></line>
+          </svg>
+        </div>
+        <div>
+          <h1 class="widget-title">Topgun Classifier</h1>
+          <p class="widget-subtitle">Pi 5 · topgun-t02.local:8000</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Light / Dark Mode Toggle Button (44px target) -->
+        <button id="themeToggleBtn" class="icon-action-btn" aria-label="Toggle Light / Dark Mode" type="button">
+          <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Connection Status Pill -->
+    <div class="status-bar-pill">
+      <div class="status-indicator">
+        <span id="statusDot" class="pulse-dot"></span>
+        <span id="connectionText">กำลังเชื่อมต่อ MQTT Broker…</span>
+      </div>
+      <button id="reconnectBtn" class="btn-text-reconnect" type="button">เชื่อมต่อใหม่</button>
+    </div>
+
+    <!-- Segmented Navigation (Predict vs Settings & Analytics) -->
+    <div class="segmented-control" role="tablist" aria-label="Widget Views">
+      <button class="segment-btn active" id="tabClassifier" role="tab" aria-selected="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+        <span>จำแนกภาพ</span>
+      </button>
+      <button class="segment-btn" id="tabTelemetry" role="tab" aria-selected="false">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"></path></svg>
+        <span>Settings & Telemetry</span>
+      </button>
+    </div>
+
+    <!-- VIEW 1: CLASSIFIER (Send Image) -->
+    <div id="viewClassifier">
+      <section class="inner-card">
+        <form id="uploadForm">
+          <div class="drop-zone" id="dropZone">
+            <input id="file" type="file" accept="image/*" required>
+            <div class="upload-icon-circle">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+            <h3>เลือกภาพ หรือลากไฟล์มาวางที่นี่</h3>
+            <p>JPEG, PNG สูงสุด 10 MB (ประมวลผล &lt; 1,000ms)</p>
+          </div>
+
+          <div id="previewContainer" class="preview-box hidden">
+            <img id="preview" alt="ภาพตัวอย่าง">
+          </div>
+
+          <button id="sendBtn" class="apple-btn-primary" type="submit" disabled>
+            <span id="btnIcon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </span>
+            <span id="btnText">ส่งภาพเข้าประมวลผล</span>
+          </button>
+        </form>
+
+        <div id="statusMessage" class="toast-pill hidden"></div>
+      </section>
+
+      <!-- Result Section -->
+      <section id="resultCard" class="inner-card hidden" style="margin-top: 14px;">
+        <div class="result-header">
+          <h3 style="font-size: 15px; font-weight: 600;">ผลลัพธ์ผ่าน MQTT</h3>
+          <span class="result-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Verified QoS 1
+          </span>
+        </div>
+
+        <div class="kpi-row" style="margin-bottom: 14px;">
+          <div class="kpi-col">
+            <span class="kpi-label">Class</span>
+            <div class="kpi-value" id="statLabel" style="color:var(--ios-blue);">-</div>
+          </div>
+          <div class="kpi-col">
+            <span class="kpi-label">Processing</span>
+            <div class="kpi-value" id="statTime" style="color:var(--ios-green);">-</div>
+          </div>
+          <div class="kpi-col">
+            <span class="kpi-label">Budget</span>
+            <div class="kpi-value" id="statBudget" style="color:var(--ios-green);">&le; 1,000ms</div>
+          </div>
+        </div>
+
+        <p style="font-size: 11.5px; color: var(--text-secondary); margin-bottom: 6px;">Raw MQTT Payload:</p>
+        <pre id="rawResult"></pre>
+      </section>
+    </div>
+
+    <!-- VIEW 2: SETTINGS & TELEMETRY -->
+    <div id="viewTelemetry" class="hidden">
+      <!-- Live Telemetry KPI Inset -->
+      <section class="inner-card">
+        <h3 style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.2px;">
+          Pipeline Telemetry
+        </h3>
+        <div class="kpi-row">
+          <div class="kpi-col">
+            <span class="kpi-label">Mean Latency</span>
+            <div class="kpi-value">56.7<span class="kpi-unit">ms</span></div>
+            <span class="kpi-badge">Sequential</span>
+          </div>
+          <div class="kpi-col">
+            <span class="kpi-label">Parallel C4</span>
+            <div class="kpi-value">188.9<span class="kpi-unit">ms</span></div>
+            <span class="kpi-badge" style="color:var(--ios-blue);">20/20 OK</span>
+          </div>
+          <div class="kpi-col">
+            <span class="kpi-label">Errors</span>
+            <div class="kpi-value">0<span class="kpi-unit">req</span></div>
+            <span class="kpi-badge">Zero Flaws</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- System Settings Group -->
+      <section class="inner-card" style="margin-top: 14px;">
+        <div class="settings-list">
+          
+          <div class="setting-row">
+            <div class="setting-lead">
+              <div class="setting-icon" style="background: var(--ios-blue);" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                  <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                  <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                </svg>
+              </div>
+              <div class="setting-labels">
+                <h4>MQTT WSS Broker</h4>
+                <p>EMQX Port 8084 TLS</p>
+              </div>
+            </div>
+            <label class="ios-switch" aria-label="Toggle MQTT Stream">
+              <input type="checkbox" id="cfgMqtt" checked>
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-lead">
+              <div class="setting-icon" style="background: var(--ios-green);" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
+              <div class="setting-labels">
+                <h4>Strict 1,000ms Budget</h4>
+                <p>Reject request if processing &gt; 1s</p>
+              </div>
+            </div>
+            <label class="ios-switch" aria-label="Toggle Strict Budget Guard">
+              <input type="checkbox" id="cfgBudget" checked>
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-lead">
+              <div class="setting-icon" style="background: var(--ios-amber);" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </div>
+              <div class="setting-labels">
+                <h4>Systemd Auto-Start</h4>
+                <p>topgun-api.service active on boot</p>
+              </div>
+            </div>
+            <span style="font-size: 13px; font-weight: 600; color: var(--ios-green);">Active</span>
+          </div>
+
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- MQTT.js Runtime (CDN WSS) -->
+  <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.4/dist/mqtt.min.js"></script>
+
+  <script>
+    (function() {
+      const $ = id => document.getElementById(id);
+      const TOPIC = 'topgun/coffee/results';
+      const MQTT_USER = 'topgun-web';
+      const MQTT_PASS = 'topgun-web';
+      const MQTT_WS_URL = 'wss://u86a8102.ala.asia-southeast1.emqxsl.com:8084/mqtt';
+
+      let client = null;
+      let isMqttReady = false;
+      let currentJob = null;
+      let previewURL = null;
+
+      // 1. Theme Switcher (System Preferred & LocalStorage)
+      const doc = document.documentElement;
+      const themeBtn = $('themeToggleBtn');
+      const themeIcon = $('themeIcon');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+      const savedTheme = localStorage.getItem('topgun_theme') || (prefersDark.matches ? 'dark' : 'light');
+
+      function setTheme(theme) {
+        doc.setAttribute('data-theme', theme);
+        localStorage.setItem('topgun_theme', theme);
+        if (theme === 'dark') {
+          themeIcon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+        } else {
+          themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+        }
+      }
+      setTheme(savedTheme);
+
+      themeBtn.addEventListener('click', () => {
+        const next = doc.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        setTheme(next);
+      });
+
+      // 2. Segmented Navigation (Classifier vs Telemetry)
+      const tabClassifier = $('tabClassifier');
+      const tabTelemetry = $('tabTelemetry');
+      const viewClassifier = $('viewClassifier');
+      const viewTelemetry = $('viewTelemetry');
+
+      tabClassifier.addEventListener('click', () => {
+        tabClassifier.classList.add('active');
+        tabClassifier.setAttribute('aria-selected', 'true');
+        tabTelemetry.classList.remove('active');
+        tabTelemetry.setAttribute('aria-selected', 'false');
+        viewClassifier.classList.remove('hidden');
+        viewTelemetry.classList.add('hidden');
+      });
+
+      tabTelemetry.addEventListener('click', () => {
+        tabTelemetry.classList.add('active');
+        tabTelemetry.setAttribute('aria-selected', 'true');
+        tabClassifier.classList.remove('active');
+        tabClassifier.setAttribute('aria-selected', 'false');
+        viewTelemetry.classList.remove('hidden');
+        viewClassifier.classList.add('hidden');
+      });
+
+      // 3. UI State Management
+      function updateConnectionState(state, text) {
+        const dot = $('statusDot');
+        dot.className = 'pulse-dot ' + state;
+        $('connectionText').textContent = text;
+        updateButtons();
+      }
+
+      function showStatus(text, type = 'info') {
+        const el = $('statusMessage');
+        el.textContent = text;
+        el.className = 'toast-pill ' + type;
+        el.classList.remove('hidden');
+      }
+
+      function hideStatus() {
+        $('statusMessage').classList.add('hidden');
+      }
+
+      function updateButtons() {
+        const hasFile = $('file').files.length > 0;
+        $('sendBtn').disabled = !isMqttReady || !hasFile || !!currentJob;
+      }
+
+      // 4. MQTT Connection
+      function initMQTT() {
+        if (!window.mqtt) {
+          updateConnectionState('error', 'โหลด MQTT library ไม่สำเร็จ');
+          return;
+        }
+        if (client) {
+          try { client.removeAllListeners(); client.end(true); } catch (e) {}
+        }
+
+        updateConnectionState('', 'กำลังเชื่อมต่อ MQTT Broker…');
+
+        client = mqtt.connect(MQTT_WS_URL, {
+          username: MQTT_USER,
+          password: MQTT_PASS,
+          clientId: 'topgun-web-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 7),
+          clean: true,
+          reconnectPeriod: 4000,
+          connectTimeout: 15000
+        });
+
+        client.on('connect', () => {
+          client.subscribe(TOPIC, { qos: 1 }, (err, grants) => {
+            if (!err && grants && grants.length && grants.every(g => g.qos < 128)) {
+              isMqttReady = true;
+              updateConnectionState('connected', 'เชื่อมต่อ MQTT แล้ว (topgun-web)');
+            } else {
+              isMqttReady = false;
+              updateConnectionState('error', 'Subscribe topic ไม่สำเร็จ');
+            }
+          });
+        });
+
+        client.on('error', (err) => {
+          isMqttReady = false;
+          updateConnectionState('error', 'MQTT Error: ' + (err.message || 'เชื่อมต่อไม่ได้'));
+        });
+
+        client.on('close', () => {
+          isMqttReady = false;
+          updateConnectionState('', 'การเชื่อมต่อหลุด กำลังลองใหม่…');
+        });
+
+        client.on('message', (receivedTopic, payload, packet) => {
+          if (!currentJob || receivedTopic !== TOPIC || packet.retain) return;
+          let data;
+          try { data = JSON.parse(payload.toString()); } catch { return; }
+          if (!data || typeof data.request_id !== 'string') return;
+
+          if (currentJob.id === data.request_id) {
+            handleJobSuccess(data);
+          } else if (!currentJob.id) {
+            if (currentJob.cache.size >= 50) currentJob.cache.delete(currentJob.cache.keys().next().value);
+            currentJob.cache.set(data.request_id, data);
+          }
+        });
+      }
+
+      function handleJobSuccess(data) {
+        if (!currentJob) return;
+        clearTimeout(currentJob.timer);
+
+        $('statLabel').textContent = data.label || 'test_only';
+        $('statTime').textContent = (data.processing_ms !== undefined ? data.processing_ms : '-') + ' ms';
+        
+        const isBudgetOk = data.within_processing_budget !== false && (data.processing_ms <= 1000);
+        $('statBudget').textContent = isBudgetOk ? 'ผ่านเกณฑ์ (≤ 1s)' : 'เกินเกณฑ์ (> 1s)';
+        $('statBudget').style.color = isBudgetOk ? 'var(--ios-green)' : 'var(--ios-red)';
+
+        $('rawResult').textContent = JSON.stringify(data, null, 2);
+        $('resultCard').classList.remove('hidden');
+
+        showStatus(`จำแนกสำเร็จ: ${data.request_id.substring(0, 8)}…`, 'success');
+
+        currentJob = null;
+        setButtonLoading(false);
+        updateButtons();
+      }
+
+      function setButtonLoading(loading) {
+        if (loading) {
+          $('btnIcon').innerHTML = '<span class="spinner"></span>';
+          $('btnText').textContent = 'กำลังส่งภาพและรอผล MQTT…';
+          $('sendBtn').disabled = true;
+        } else {
+          $('btnIcon').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
+          $('btnText').textContent = 'ส่งภาพเข้าประมวลผล';
+          updateButtons();
+        }
+      }
+
+      // 5. File Selection & Drag-and-Drop
+      $('file').onchange = (e) => {
+        handleFileSelected(e.target.files[0]);
+      };
+
+      const dropZone = $('dropZone');
+      ['dragenter', 'dragover'].forEach(name => {
+        dropZone.addEventListener(name, (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+      });
+      ['dragleave', 'drop'].forEach(name => {
+        dropZone.addEventListener(name, (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+      });
+      dropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length) {
+          $('file').files = e.dataTransfer.files;
+          handleFileSelected(e.dataTransfer.files[0]);
+        }
+      });
+
+      function handleFileSelected(file) {
+        if (!file) {
+          $('previewContainer').classList.add('hidden');
+          updateButtons();
+          return;
+        }
+        if (previewURL) URL.revokeObjectURL(previewURL);
+        previewURL = URL.createObjectURL(file);
+        $('preview').src = previewURL;
+        $('previewContainer').classList.remove('hidden');
+        hideStatus();
+        updateButtons();
+      }
+
+      // 6. Form Submission
+      $('uploadForm').onsubmit = async (event) => {
+        event.preventDefault();
+        if (!isMqttReady || currentJob) return;
+
+        const file = $('file').files[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+          showStatus('ไฟล์มีขนาดเกิน 10 MB กรุณาเลือกไฟล์ขนาดเล็กลง', 'error');
+          return;
+        }
+
+        const job = { id: null, cache: new Map(), timer: null };
+        currentJob = job;
+        setButtonLoading(true);
+        showStatus('กำลังส่งภาพไปยัง Raspberry Pi…', 'info');
+
+        const controller = new AbortController();
+        job.timer = setTimeout(() => {
+          controller.abort();
+          if (currentJob === job) {
+            showStatus('หมดเวลารอผล (Timeout 30s) ไม่ได้รับข้อความยืนยันจาก MQTT', 'error');
+            currentJob = null;
+            setButtonLoading(false);
+          }
+        }, 30000);
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+          const response = await fetch('/predict', {
+            method: 'POST',
+            body: formData,
+            signal: controller.signal
+          });
+
+          const data = await response.json();
+          if (currentJob !== job) return;
+
+          if (!response.ok) {
+            const errMsg = data.detail ? (typeof data.detail === 'string' ? data.detail : (data.detail.error || JSON.stringify(data.detail))) : 'API ส่งรหัสข้อผิดพลาด';
+            throw new Error(errMsg);
+          }
+
+          if (!data.request_id) {
+            throw new Error('API ไม่ส่ง request_id กลับมา');
+          }
+
+          job.id = data.request_id;
+          showStatus(`API รับภาพแล้ว (ID: ${job.id.substring(0, 8)}…) รอผล MQTT…`, 'info');
+
+          if (job.cache.has(job.id)) {
+            handleJobSuccess(job.cache.get(job.id));
+          }
+        } catch (err) {
+          if (currentJob === job) {
+            clearTimeout(job.timer);
+            currentJob = null;
+            setButtonLoading(false);
+            showStatus('ส่งภาพไม่สำเร็จ: ' + err.message, 'error');
+          }
+        }
+      };
+
+      $('reconnectBtn').onclick = () => {
+        initMQTT();
+      };
+
+      window.addEventListener('DOMContentLoaded', () => {
+        initMQTT();
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Topgun · Settings & Analytics Widget</title>
+  <style>
+    /* ==========================================================================
+       Apple OS Human Interface System Variables & Palette
+       - Light: Pure White (#FFFFFF) & System Gray 6 (#F2F2F7)
+       - Dark: System Elevated (#2C2C2E) & System Dark (#1C1C1E)
+       - Accents: iOS Blue (#007AFF), iOS Green (#34C759), iOS Amber (#FF9500), iOS Red (#FF3B30)
+       - Typography: Native System Font Stack (0 HTTP Requests)
+       ========================================================================== */
+    :root {
+      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      
+      /* Light Mode Palette */
+      --page-bg: #E5E5EA;
+      --widget-bg: #FFFFFF;
+      --card-inset: #F2F2F7;
+      --card-inset-subtle: #E5E5EA;
+      --hairline: rgba(0, 0, 0, 0.06);
+      --hairline-heavy: rgba(0, 0, 0, 0.12);
+      --text-primary: #000000;
+      --text-secondary: #8E8E93;
+      --text-tertiary: #C7C7CC;
+      --shadow-widget: 0 12px 36px -4px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+      --shadow-inset: 0 1px 3px rgba(0, 0, 0, 0.04);
+      
+      /* iOS System Accents */
+      --ios-blue: #007AFF;
+      --ios-green: #34C759;
+      --ios-amber: #FF9500;
+      --ios-red: #FF3B30;
+      --ios-purple: #AF52DE;
+      --ios-teal: #5AC8FA;
+      
+      /* Apple Geometry Tokens */
+      --r-widget: 28px;
+      --r-card: 16px;
+      --r-pill: 9999px;
+      --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    [data-theme="dark"] {
+      --page-bg: #000000;
+      --widget-bg: #2C2C2E;
+      --card-inset: #1C1C1E;
+      --card-inset-subtle: #242426;
+      --hairline: rgba(255, 255, 255, 0.08);
+      --hairline-heavy: rgba(255, 255, 255, 0.16);
+      --text-primary: #FFFFFF;
+      --text-secondary: #98989D;
+      --text-tertiary: #48484A;
+      --shadow-widget: 0 16px 40px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+      --shadow-inset: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    /* CSS Reset & Hardware-Accelerated Rendering */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-stack);
+      background-color: var(--page-bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      transition: background-color 280ms var(--ease-apple);
+    }
+
+    /* Outer Apple OS Large Widget Frame */
+    .apple-widget {
+      width: 100%;
+      max-width: 480px;
+      background: var(--widget-bg);
+      border-radius: var(--r-widget);
+      border: 1px solid var(--hairline);
+      box-shadow: var(--shadow-widget);
+      padding: 24px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      transition: background-color 280ms var(--ease-apple),
+                  border-color 280ms var(--ease-apple),
+                  box-shadow 280ms var(--ease-apple);
+    }
+
+    /* Widget Header */
+    .widget-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .widget-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #007AFF, #5856D6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF;
+      box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+    }
+
+    .widget-title {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.4px;
+    }
+
+    .widget-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* Header Action Pill */
+    .theme-toggle-btn {
+      min-width: 44px;
+      min-height: 44px;
+      border: 1px solid var(--hairline);
+      background: var(--card-inset);
+      border-radius: var(--r-pill);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: transform 180ms ease, background-color 200ms ease;
+    }
+
+    .theme-toggle-btn:active {
+      transform: scale(0.92);
+    }
+
+    .theme-toggle-btn:focus-visible {
+      outline: 2px solid var(--ios-blue);
+      outline-offset: 2px;
+    }
+
+    /* Inner Card - Rounded-2xl Squircle */
+    .inner-card {
+      background: var(--card-inset);
+      border-radius: var(--r-card);
+      border: 1px solid var(--hairline);
+      padding: 16px;
+      box-shadow: var(--shadow-inset);
+      transition: background-color 280ms var(--ease-apple);
+    }
+
+    /* Tabbed Segmented Control (iOS standard) */
+    .segmented-control {
+      background: var(--card-inset-subtle);
+      border-radius: 10px;
+      padding: 3px;
+      display: flex;
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .segment-btn {
+      flex: 1;
+      min-height: 32px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: color 180ms ease, background-color 200ms ease, box-shadow 200ms ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .segment-btn.active {
+      background: var(--widget-bg);
+      color: var(--text-primary);
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .segment-btn:focus-visible {
+      outline: 2px solid var(--ios-blue);
+    }
+
+    /* KPI Grid inside inner card */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      text-align: left;
+    }
+
+    .kpi-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+
+    .kpi-value {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.6px;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .kpi-unit {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .kpi-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ios-green);
+      margin-top: 2px;
+    }
+
+    /* Mini Inline SVG Telemetry Bar Chart */
+    .chart-container {
+      margin-top: 14px;
+      height: 48px;
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      padding-top: 8px;
+    }
+
+    .chart-bar-wrap {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chart-bar {
+      width: 100%;
+      border-radius: var(--r-pill);
+      background: var(--ios-blue);
+      opacity: 0.35;
+      transition: height 350ms var(--ease-apple), opacity 200ms ease;
+    }
+
+    .chart-bar.current {
+      opacity: 1;
+      background: linear-gradient(180deg, var(--ios-blue), #5856D6);
+    }
+
+    .chart-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* Settings Group (Apple Inset List Style) */
+    .settings-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .setting-item {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .setting-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .setting-item:first-child {
+      padding-top: 0;
+    }
+
+    .setting-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .setting-icon-box {
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF;
+    }
+
+    .setting-text h4 {
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.2px;
+    }
+
+    .setting-text p {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Apple iOS Hardware-Accelerated Toggle Switch (Min 44px Touch Target) */
+    .ios-switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 51px;
+      height: 44px; /* WCAG 44px Touch Box */
+      cursor: pointer;
+    }
+
+    .ios-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .switch-track {
+      width: 51px;
+      height: 31px;
+      background-color: var(--card-inset-subtle);
+      border: 1px solid var(--hairline);
+      border-radius: var(--r-pill);
+      transition: background-color 240ms var(--ease-apple), border-color 240ms ease;
+      position: relative;
+    }
+
+    .switch-thumb {
+      width: 27px;
+      height: 27px;
+      background-color: #FFFFFF;
+      border-radius: var(--r-pill);
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.06);
+      transition: transform 240ms var(--ease-apple);
+    }
+
+    .ios-switch input:checked + .switch-track {
+      background-color: var(--ios-green);
+      border-color: var(--ios-green);
+    }
+
+    .ios-switch input:checked + .switch-track .switch-thumb {
+      transform: translateX(20px);
+    }
+
+    .ios-switch input:focus-visible + .switch-track {
+      outline: 2px solid var(--ios-blue);
+      outline-offset: 3px;
+    }
+
+    /* Live Telemetry Status Pill */
+    .telemetry-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding: 4px 2px 0;
+    }
+
+    .live-pulse {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--ios-green);
+      box-shadow: 0 0 8px var(--ios-green);
+      animation: applePulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes applePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.85); }
+    }
+
+    /* Action Push Button */
+    .apple-btn-primary {
+      min-height: 44px;
+      border-radius: var(--r-pill);
+      background-color: var(--ios-blue);
+      color: #FFFFFF;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
+      transition: filter 180ms ease, transform 150ms ease;
+    }
+
+    .apple-btn-primary:active {
+      transform: scale(0.97);
+      filter: brightness(0.9);
+    }
+
+    .apple-btn-primary:focus-visible {
+      outline: 2px solid var(--ios-blue);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================
+       Apple OS Settings & Analytics Widget Card
+       ========================================== -->
+  <aside class="apple-widget" role="region" aria-label="Topgun Performance & Settings Widget">
+    
+    <!-- Top Bar: App Identity & Theme Switcher -->
+    <header class="widget-header">
+      <div class="widget-title-group">
+        <div class="app-icon" aria-hidden="true">
+          <!-- Inline Feather/SF Coffee Icon -->
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+            <line x1="6" y1="1" x2="6" y2="4"></line>
+            <line x1="10" y1="1" x2="10" y2="4"></line>
+            <line x1="14" y1="1" x2="14" y2="4"></line>
+          </svg>
+        </div>
+        <div>
+          <h2 class="widget-title">Topgun Analytics</h2>
+          <p class="widget-subtitle">Pi 5 · RPi OS Trixie (64-bit)</p>
+        </div>
+      </div>
+
+      <!-- Theme Switch Button (Touch Target ≥ 44px) -->
+      <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle Light and Dark Mode" type="button">
+        <!-- Moon / Sun SVG -->
+        <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Analytics Inset Card with Telemetry Graph -->
+    <section class="inner-card" aria-labelledby="analyticsTitle">
+      <h3 id="analyticsTitle" style="display:none;">Pipeline Analytics</h3>
+      
+      <!-- Segmented Time Period Control -->
+      <div class="segmented-control" role="tablist" aria-label="Analytics interval">
+        <button class="segment-btn active" role="tab" aria-selected="true" id="tabLive">Live (20s)</button>
+        <button class="segment-btn" role="tab" aria-selected="false" id="tabHour">1 Hour</button>
+        <button class="segment-btn" role="tab" aria-selected="false" id="tabDay">24 Hours</button>
+      </div>
+
+      <!-- Core KPI Metrics -->
+      <div class="kpi-row">
+        <div class="kpi-col">
+          <span class="kpi-label">Latency</span>
+          <div class="kpi-value" id="kpiLatency">56<span class="kpi-unit">ms</span></div>
+          <span class="kpi-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
+            &lt; 1,000ms
+          </span>
+        </div>
+        <div class="kpi-col">
+          <span class="kpi-label">Accuracy</span>
+          <div class="kpi-value" id="kpiAccuracy">100<span class="kpi-unit">%</span></div>
+          <span class="kpi-badge" style="color:var(--ios-blue);">20/20 OK</span>
+        </div>
+        <div class="kpi-col">
+          <span class="kpi-label">Slots</span>
+          <div class="kpi-value" id="kpiSlots">0<span class="kpi-unit">/ 4</span></div>
+          <span class="kpi-badge" style="color:var(--text-secondary);">Idle</span>
+        </div>
+      </div>
+
+      <!-- Inline Telemetry Histogram -->
+      <div class="chart-container" aria-label="Recent inference histogram" role="img">
+        <div class="chart-bar-wrap"><div class="chart-bar" style="height: 38%;"></div><span class="chart-label">1</span></div>
+        <div class="chart-bar-wrap"><div class="chart-bar" style="height: 45%;"></div><span class="chart-label">2</span></div>
+        <div class="chart-bar-wrap"><div class="chart-bar" style="height: 60%;"></div><span class="chart-label">3</span></div>
+        <div class="chart-bar-wrap"><div class="chart-bar" style="height: 52%;"></div><span class="chart-label">4</span></div>
+        <div class="chart-bar-wrap"><div class="chart-bar" style="height: 32%;"></div><span class="chart-label">5</span></div>
+        <div class="chart-bar-wrap"><div class="chart-bar" style="height: 48%;"></div><span class="chart-label">6</span></div>
+        <div class="chart-bar-wrap"><div class="chart-bar current" style="height: 72%;"></div><span class="chart-label">Now</span></div>
+      </div>
+    </section>
+
+    <!-- Settings Inset Card (Apple Inset List Style) -->
+    <section class="inner-card" aria-label="System Switches">
+      <div class="settings-group">
+        
+        <!-- Toggle 1: MQTT Realtime Pub/Sub -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-icon-box" style="background: var(--ios-blue);" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                <line x1="12" y1="20" x2="12.01" y2="20"></line>
+              </svg>
+            </div>
+            <div class="setting-text">
+              <h4>MQTT Streaming</h4>
+              <p>EMQX QoS 1 TLS Broadcast</p>
+            </div>
+          </div>
+          <label class="ios-switch" aria-label="Toggle MQTT Streaming">
+            <input type="checkbox" id="toggleMqtt" checked>
+            <span class="switch-track">
+              <span class="switch-thumb"></span>
+            </span>
+          </label>
+        </div>
+
+        <!-- Toggle 2: Auto Hardware Warm-up -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-icon-box" style="background: var(--ios-amber);" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+              </svg>
+            </div>
+            <div class="setting-text">
+              <h4>Model Pre-warm</h4>
+              <p>Pre-allocate NPU / RAM cache</p>
+            </div>
+          </div>
+          <label class="ios-switch" aria-label="Toggle Model Pre-warming">
+            <input type="checkbox" id="toggleWarmup" checked>
+            <span class="switch-track">
+              <span class="switch-thumb"></span>
+            </span>
+          </label>
+        </div>
+
+        <!-- Toggle 3: Strict 1-Second Budget -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-icon-box" style="background: var(--ios-green);" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div class="setting-text">
+              <h4>1s Budget Guard</h4>
+              <p>Reject if processing > 1,000ms</p>
+            </div>
+          </div>
+          <label class="ios-switch" aria-label="Toggle 1-Second Budget Guard">
+            <input type="checkbox" id="toggleGuard" checked>
+            <span class="switch-track">
+              <span class="switch-thumb"></span>
+            </span>
+          </label>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Footer Bar -->
+    <footer class="telemetry-footer">
+      <div class="live-pulse">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span>Broker Online (topgun-t02)</span>
+      </div>
+      <span>Updated 1s ago</span>
+    </footer>
+
+    <!-- Interactive Primary Push Button -->
+    <button class="apple-btn-primary" id="btnRunAudit" type="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+      <span>Run Pipeline Health Audit</span>
+    </button>
+
+  </aside>
+
+  <!-- Zero-overhead Native Script for Apple Widget Interactions -->
+  <script>
+    (function() {
+      const doc = document.documentElement;
+      const themeBtn = document.getElementById('themeToggleBtn');
+      const themeIcon = document.getElementById('themeIcon');
+
+      // 1. Detect System Theme or Local Preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+      const currentTheme = localStorage.getItem('apple_widget_theme') || (prefersDark.matches ? 'dark' : 'light');
+      
+      function setTheme(theme) {
+        doc.setAttribute('data-theme', theme);
+        localStorage.setItem('apple_widget_theme', theme);
+        if (theme === 'dark') {
+          themeIcon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+        } else {
+          themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+        }
+      }
+
+      setTheme(currentTheme);
+
+      themeBtn.addEventListener('click', () => {
+        const nextTheme = doc.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        setTheme(nextTheme);
+      });
+
+      // 2. Segmented Tabs Interactivity
+      const segments = document.querySelectorAll('.segment-btn');
+      segments.forEach(btn => {
+        btn.addEventListener('click', () => {
+          segments.forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-selected', 'false');
+          });
+          btn.classList.add('active');
+          btn.setAttribute('aria-selected', 'true');
+        });
+      });
+
+      // 3. Health Audit Button Feedback
+      const auditBtn = document.getElementById('btnRunAudit');
+      auditBtn.addEventListener('click', () => {
+        const label = auditBtn.querySelector('span');
+        const originalText = label.textContent;
+        label.textContent = 'Auditing Pipeline…';
+        auditBtn.style.opacity = '0.7';
+        setTimeout(() => {
+          label.textContent = 'Pipeline Verified 100%';
+          auditBtn.style.backgroundColor = 'var(--ios-green)';
+          auditBtn.style.opacity = '1';
+          setTimeout(() => {
+            label.textContent = originalText;
+            auditBtn.style.backgroundColor = 'var(--ios-blue)';
+          }, 1800);
+        }, 500);
+      });
+    })();
+  </script>
+</body>
+</html>

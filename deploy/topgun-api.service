@@ -1,0 +1,20 @@
+[Unit]
+Description=Topgun image API (transport test mode)
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=topgun
+WorkingDirectory=/home/topgun/topgun
+ExecStart=/home/topgun/topgun/.venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8000 --workers 1
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

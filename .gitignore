@@ -1,2 +1,35 @@
+# System files
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# Audio / Media from prep
 /Pipelines of prepare topgun.m4a
 /Pipelines of prepare topgun.mp3
+
+# Environment and secrets
+/.env
+/.env.*.local
+
+# Virtual environment and caches
+/.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Local backup and test outputs
+app.py.backup-*
+load-results*.json
+/load-results-sequential.json
+/load-results-c4.json
+
+# PDF documents
+/2569-084-TGR2026-University- V.1.0.pdf
+/2026-09-14 TGR2026 Proposal.pdf
+
+# Training runs & datasets
+runs/
+*.pt
+dataset/
+temp_kaggle_extract/

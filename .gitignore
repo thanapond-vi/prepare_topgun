@@ -32,4 +32,5 @@ load-results*.json
 runs/
 *.pt
 dataset/
+data/
 temp_kaggle_extract/

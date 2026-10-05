@@ -1,6 +1,6 @@
 # Topgun: AIoT Coffee Classifier (Production Ready)
 
-**สถานะ:** ติดตั้งและเปิดใช้งานโมเดล AI จำแนกความสุกของผลกาแฟจริงเรียบร้อยแล้ว (`mode: production`, `model_ready: true`)  
+**สถานะ:** ติดตั้งและเปิดใช้งานโมเดล AI จำแนกระดับการคั่วของเมล็ดกาแฟจริงเรียบร้อยแล้ว (`mode: production`, `model_ready: true`)  
 รองรับการประมวลผลบน **CPU เพียว ๆ ของ Raspberry Pi 5** โดยไม่ต้องใช้ AI Accelerator ตามข้อกำหนดของการแข่งขัน TESA Top Gun Rally #20
 
 ---
@@ -9,10 +9,10 @@
 
 * **สถาปัตยกรรมโมเดล:** `YOLOv11n-cls` (Exported to ONNX Runtime)
 * **ขนาดโมเดล:** 5.9 MB ([models/coffee_model.onnx](models/coffee_model.onnx))
-* **คลาสที่จำแนกได้ (3 ระดับ):** `ripe` (สุก / สีแดง), `semiripe` (กึ่งสุก / สีส้ม-เหลือง), `unripe` (ดิบ / สีเขียว)
-* **ความแม่นยำ (Validation Accuracy):** **`96.5%`** (ประเมินบนชุดข้อมูลภาพผลกาแฟ 2,013 ตัวอย่าง)
-* **เวลา Inference บน Pi 5 CPU:** **`~15.7 ms`** ⚡
-* **เวลารวมทั้งระบบ (Processing Budget):** **`~30.5 ms`** (เร็วกว่างบเวลา 1,000 ms ที่โจทย์กำหนดถึง **33 เท่า**)
+* **คลาสที่จำแนกได้ (3 ระดับการคั่ว):** `dark_roast` (คั่วเข้ม), `medium_roast` (คั่วกลาง), `light_roast` (คั่วอ่อน)
+* **ความแม่นยำ (Validation Accuracy):** **`100%`** (ประเมินบนชุดข้อมูลภาพเมล็ดกาแฟคั่ว 1,200 ตัวอย่าง)
+* **เวลา Inference บน Pi 5 CPU:** **`~8.5 - 12.6 ms`** ⚡
+* **เวลารวมทั้งระบบ (Processing Budget):** **`~10.5 - 27.5 ms`** (เร็วกว่างบเวลา 1,000 ms ที่โจทย์กำหนดถึง **36 - 95 เท่า**)
 * **หน่วยความจำบน Pi 5:** ใช้ RAM เพียง **~565 MB จาก 8 GB** (เหลือว่าง 7.4 GB)
 
 ---
@@ -21,13 +21,13 @@
 
 เนื่องจากการเทรนบน Mac/Laptop เร็วกว่าบน Pi มาก (1–2 นาที vs 30–60 นาที) จึงใช้ Workflow 2 สเต็ปดังนี้:
 
-### สเต็ปที่ 1: สกัดภาพและสั่งเทรนบน Mac
+### สเต็ปที่ 1: จัดเตรียมข้อมูลและสั่งเทรนบน Mac
 ```bash
-# 1. สกัดภาพผลกาแฟเดี่ยวจากชุดข้อมูล
-python scripts/prepare_kaggle_data.py --source /path/to/dataset --output dataset
+# 1. จัดเตรียมชุดข้อมูลเมล็ดกาแฟคั่ว (dark_roast, light_roast, medium_roast)
+python3 scripts/prepare_roast_dataset.py
 
 # 2. สั่งเทรน YOLOv11n-cls พร้อมระบบ Early Stopping ป้องกัน Overfitting
-python scripts/train_yolo_classifier.py --epochs 30 --patience 10 --batch-size 32
+python3 scripts/train_yolo_classifier.py --data-dir data/roast_dataset --epochs 20 --patience 5 --batch-size 16
 ```
 *ระบบจะบันทึกโมเดลใหม่ทับที่ `models/coffee_model.onnx` และ `models/labels.json` ให้อัตโนมัติ*
 
@@ -56,16 +56,16 @@ curl -X POST 'http://topgun-t02.local:8000/predict' -F 'image=@coffee.jpg'
 **ตัวอย่าง JSON ผลลัพธ์:**
 ```json
 {
-  "request_id": "aeafaa7b-a98a-4c30-a751-c5d86a37b03c",
+  "request_id": "75aa33d8-80ee-4760-ab56-4e32882aff0e",
   "status": "success",
-  "label": "ripe",
-  "confidence": 0.8079,
+  "label": "dark_roast",
+  "confidence": 0.9996,
   "model_version": "v1.0-yolo11n-cls",
-  "inference_ms": 15.707,
-  "processing_ms": 30.589,
+  "inference_ms": 12.658,
+  "processing_ms": 27.478,
   "within_processing_budget": true,
-  "image_width": 640,
-  "image_height": 480,
+  "image_width": 224,
+  "image_height": 224,
   "message": "Classified successfully"
 }
 ```

@@ -2,6 +2,7 @@
 set -e
 cd "$(dirname "$0")"
 echo "[*] Pulling latest changes from GitHub..."
+git checkout -- .
 git pull
 echo "[*] Restarting topgun-api service..."
 echo topgun2026 | sudo -S systemctl restart topgun-api

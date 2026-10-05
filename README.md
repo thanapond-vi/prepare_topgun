@@ -94,11 +94,21 @@ curl http://topgun-t02.local:8000/health
 
 ```bash
 # 1. ทดสอบ Unit / Integration Tests (9 รายการ)
-python -m pytest -q
+python3 -m pytest -q
 
 # 2. ทดสอบ Edge Cases & Error Handling บน Pi จริง (7 รายการ)
-python scripts/edge_test.py --url http://topgun-t02.local:8000
+python3 scripts/edge_test.py --url http://topgun-t02.local:8000
 
 # 3. ทดสอบ Load Test ยิงซ้ำแบบต่อเนื่อง
-python scripts/load_test.py --url http://topgun-t02.local:8000 --image test_coffee.jpg --count 20 --concurrency 4
+python3 scripts/load_test.py --url http://topgun-t02.local:8000 --image test_coffee.jpg --count 20 --concurrency 4
 ```
+
+---
+
+## 📚 แหล่งที่มาของชุดข้อมูล (Dataset Credits)
+
+* **ชื่อชุดข้อมูล:** [Coffee Bean Dataset (Resized 224x224)](https://www.kaggle.com/datasets/gpiosenka/coffee-bean-dataset-resized-224-x-224)
+* **ผู้จัดทำ (Creator):** Gerry Piosenka ([@gpiosenka on Kaggle](https://www.kaggle.com/gpiosenka))
+* **แพลตฟอร์ม:** Kaggle
+* **รายละเอียด:** ชุดข้อมูลภาพถ่ายเมล็ดกาแฟจริงขนาด 224×224 พิกเซล (RGB) จำแนกระดับการคั่ว (Dark Roast, Medium Roast, Light Roast, Green Beans) เพื่อใช้ฝึกสอนและทดสอบโมเดล Computer Vision
+

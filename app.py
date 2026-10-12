@@ -1,4 +1,4 @@
-"""Topgun transport test API. No classification model is installed yet."""
+"""Topgun coffee visible-tone and legacy ONNX classification API."""
 import asyncio
 import io
 import json
@@ -15,13 +15,54 @@ import paho.mqtt.client as mqtt
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
-from PIL import Image, UnidentifiedImageError
+from fastapi.staticfiles import StaticFiles
+from PIL import Image, ImageOps, UnidentifiedImageError
 from classifier import CoffeeClassifier
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT / '.env')
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
 Image.MAX_IMAGE_PIXELS = 20_000_000
+
+
+class PrettyJSONResponse(JSONResponse):
+    """Readable HTTP JSON with a trailing newline for terminal clients."""
+    def render(self, content):
+        rendered = json.dumps(content, ensure_ascii=False, allow_nan=False, indent=2)
+        # Keep the potentially very large polygon payload as one compact JSON
+        # value while retaining readable indentation for the response fields.
+        key = '"mask_polygons"'
+        key_start = rendered.find(key)
+        if key_start >= 0:
+            value_start = rendered.find('[', key_start + len(key))
+            if value_start >= 0:
+                depth = 0
+                in_string = False
+                escaped = False
+                value_end = None
+                for index in range(value_start, len(rendered)):
+                    char = rendered[index]
+                    if in_string:
+                        if escaped:
+                            escaped = False
+                        elif char == '\\':
+                            escaped = True
+                        elif char == '"':
+                            in_string = False
+                        continue
+                    if char == '"':
+                        in_string = True
+                    elif char == '[':
+                        depth += 1
+                    elif char == ']':
+                        depth -= 1
+                        if depth == 0:
+                            value_end = index + 1
+                            break
+                if value_end is not None:
+                    compact = json.dumps(content['mask_polygons'], ensure_ascii=False, separators=(',', ':'))
+                    rendered = rendered[:value_start] + compact + rendered[value_end:]
+        return (rendered + '\n').encode('utf-8')
 
 
 class Broker:
@@ -82,16 +123,17 @@ def create_app(broker_factory=Broker):
     @asynccontextmanager
     async def lifespan(app):
         app.state.broker = broker_factory()
-        app.state.slots = threading.BoundedSemaphore(4)
-        app.state.classifier = CoffeeClassifier()
+        app.state.classifier = CoffeeClassifier(mode=os.getenv("COFFEE_CLASSIFIER_MODE", "segmentation"))
+        app.state.slots = threading.BoundedSemaphore(1 if app.state.classifier.mode == 'segmentation' else 4)
         app.state.broker.start()
         try:
             yield
         finally:
             app.state.broker.stop()
 
-    app = FastAPI(title='Topgun transport test API', lifespan=lifespan)
+    app = FastAPI(title='Topgun V1 coffee segmentation API', version='1.0.0', lifespan=lifespan)
     app.add_middleware(UploadClock)
+    app.mount('/assets', StaticFiles(directory=ROOT / 'web' / 'assets'), name='assets')
 
     @app.get('/', include_in_schema=False)
     def home():
@@ -105,8 +147,9 @@ def create_app(broker_factory=Broker):
     def health(request: Request):
         classifier = getattr(request.app.state, 'classifier', None)
         model_ready = classifier.is_ready if classifier else False
-        return {'status': 'ok', 'mode': 'production' if model_ready else 'test',
+        return {'status': 'ok', 'mode': ('experimental' if classifier.mode in {'tone', 'segmentation'} else 'production') if model_ready else 'test',
                 'model_ready': model_ready,
+                'model_version': classifier.model_version if classifier else None,
                 'mqtt_connected': request.app.state.broker.connected.is_set()}
 
     @app.get('/ready')
@@ -117,9 +160,10 @@ def create_app(broker_factory=Broker):
         return JSONResponse(status_code=200 if connected else 503, content={
             'transport_ready': connected,
             'model_ready': model_ready,
-            'mode': 'production' if model_ready else 'test'})
+            'model_version': classifier.model_version if classifier else None,
+            'mode': ('experimental' if classifier.mode in {'tone', 'segmentation'} else 'production') if model_ready else 'test'})
 
-    @app.post('/predict')
+    @app.post('/predict', response_class=PrettyJSONResponse)
     async def predict(request: Request, image: UploadFile = File(...)):
         started = request.scope.get('topgun_body_complete', time.perf_counter())
         request_id = str(uuid.uuid4())
@@ -147,6 +191,7 @@ def create_app(broker_factory=Broker):
                         warnings.simplefilter('error', Image.DecompressionBombWarning)
                         with Image.open(io.BytesIO(data)) as picture:
                             picture.load()
+                            picture = ImageOps.exif_transpose(picture)
                             width, height = picture.size
                             if classifier and classifier.is_ready:
                                 clf_res = classifier.predict(picture)
@@ -170,6 +215,11 @@ def create_app(broker_factory=Broker):
                         'image_height': height,
                         'message': clf_res.get('message', 'Classified successfully'),
                     }
+                    for key in ('classification_basis', 'confidence_kind', 'requires_review', 'warnings', 'analysis',
+                                'detections', 'detection_count', 'mask_polygons', 'mask_scope',
+                                'selection_rule', 'confidence_threshold', 'analysis_ms'):
+                        if key in clf_res:
+                            result[key] = clf_res[key]
                 else:
                     result = {
                         'request_id': request_id,

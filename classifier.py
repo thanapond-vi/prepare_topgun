@@ -1,6 +1,6 @@
 """
-Topgun Coffee Classifier - ONNX Runtime Inference Engine
-Optimized for Raspberry Pi 5 (< 30ms latency)
+Topgun coffee classifier: legacy ONNX and experimental visible-tone analysis.
+New tone-path latency has not yet been measured on Raspberry Pi 5.
 """
 
 import json
@@ -9,19 +9,33 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import numpy as np
 from PIL import Image
+from coffee_vision import analyze_tone, ToneConfig
 
 ROOT = Path(__file__).resolve().parent
 
 class CoffeeClassifier:
-    def __init__(self, model_path: Optional[str] = None, labels_path: Optional[str] = None):
+    def __init__(self, model_path: Optional[str] = None, labels_path: Optional[str] = None, mode: str = "onnx", tone_config: Optional[ToneConfig] = None):
+        if mode not in {"tone", "onnx", "segmentation"}:
+            raise ValueError("mode must be tone, onnx or segmentation")
+        self.mode = mode
+        self.tone_config = tone_config or ToneConfig()
         self.model_path = Path(model_path) if model_path else (ROOT / "models" / "coffee_model.onnx")
         self.labels_path = Path(labels_path) if labels_path else (ROOT / "models" / "labels.json")
         self.session = None
-        self.labels = ["unripe", "semiripe", "ripe"]
+        self.labels = ["dark_roast", "light_roast", "medium_roast"]
         self.is_ready = False
         self.model_version = "v1.0-yolo11n-cls"
 
-        if self.model_path.exists():
+        if self.mode == "segmentation":
+            from segmentation import SegmentationClassifier
+            self.segmenter = SegmentationClassifier(model_path=model_path)
+            self.is_ready = self.segmenter.is_ready
+            self.labels = self.segmenter.labels
+            self.model_version = self.segmenter.model_version
+        elif self.mode == "tone":
+            self.is_ready = True
+            self.model_version = "v2.0-visible-tone-experimental"
+        elif self.model_path.exists():
             self._load_model()
 
     def _load_model(self):
@@ -67,6 +81,18 @@ class CoffeeClassifier:
         return np.expand_dims(img_data, axis=0)
 
     def predict(self, image: Image.Image) -> Dict[str, Any]:
+        if self.mode == 'segmentation':
+            return self.segmenter.predict(image)
+        if self.mode == "tone":
+            started = time.perf_counter()
+            result = analyze_tone(image, self.tone_config)
+            result.update({
+                "inference_ms": round((time.perf_counter() - started) * 1000, 3),
+                "model_version": self.model_version,
+                "status": "success",
+                "message": "Experimental visible tone estimate; not a measurement of actual roast level",
+            })
+            return result
         if not self.is_ready or not self.session:
             return {
                 "label": "test_only",

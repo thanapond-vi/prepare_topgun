@@ -9,7 +9,8 @@ Thumbs.db
 
 # Environment and secrets
 /.env
-/.env.*.local
+/.env.*
+!/.env.example
 
 # Virtual environment and caches
 /.venv/
@@ -17,12 +18,19 @@ venv/
 __pycache__/
 .pytest_cache/
 *.pyc
+.ruff_cache/
+.mypy_cache/
+
+# Local editor settings
+/.idea/
 
 # Local backup and test outputs
 app.py.backup-*
 load-results*.json
 /load-results-sequential.json
 /load-results-c4.json
+*.log
+/:memory:.ses
 
 # PDF documents
 /2569-084-TGR2026-University- V.1.0.pdf
@@ -34,3 +42,60 @@ runs/
 dataset/
 data/
 temp_kaggle_extract/
+/datasets/
+/Coffee Bean Roast Degree.v3i.yolo26/
+/old_model/
+# Model binaries and frozen baseline snapshots are local artifacts.
+/models/*.onnx
+/baseline_model/
+*.onnx
+*.engine
+*.tflite
+*.mlpackage/
+*.mlmodel
+
+/ref
+
+# Summary and skills
+/skill.md
+# Generated service/UI evidence (retain JSON evaluation reports)
+/reports/roboflow-seg-created.jpg
+
+# Local deployment staging
+/.deploy-seg/
+
+# Local reference literature and credentials in deployment helper
+/Coffee-Roasting-Level-by-Artificial-Intelligence_compressed.pdf
+/update.sh
+/tmp/
+/.coverage
+/htmlcov/
+/local-backups/
+
+# Local model/runtime rollback snapshots
+model_backups/
+
+# V1: the one deployed inference model is needed by testers.
+!models/coffee_segmentation.onnx
+# Local browser broker config and experiment outputs
+/web/assets/mqtt-config.js
+/reports/**/standard_metrics/
+/reports/**/*.jpg
+/reports/**/*.png
+/reports/dataset-*.json
+/reports/workspace-transfer-*.json
+/reports/pile-dataset-duplicate-audit.json
+/test_classifier_with_crop.py
+/test_crop_experiment.py
+/.deploy-*/
+*.zip
+*.tar
+*.tar.gz
+*.cache
+*.out
+*.pid
+
+# Bulky per-image predictions, historical audit dumps stay local.
+/reports/**/*.json
+!/reports/rgb-bgr-comparison-20261013/results.json
+!/reports/v1-readiness-20261013.json

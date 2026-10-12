@@ -1,0 +1,21 @@
+{
+  "release": "1.0.0",
+  "model_version": "yolo26n-seg-rgb-20261013-epoch35-onnx",
+  "model_file": "coffee_segmentation.onnx",
+  "sha256": "c8975b75c63bda7bf4d86c38b5c442e9c2906210e9e9cace53fb2e5879b92658",
+  "input_color_order": "rgb",
+  "input_shape": [
+    1,
+    3,
+    640,
+    640
+  ],
+  "confidence_threshold": 0.15,
+  "classes": [
+    "dark_roast",
+    "light_roast",
+    "medium_roast",
+    "unknown"
+  ],
+  "no_detection": "Result state when no finite prediction reaches threshold; not a learned class."
+}

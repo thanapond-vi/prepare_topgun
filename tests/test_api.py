@@ -34,7 +34,8 @@ class FakeBroker:
 
 
 @pytest.fixture
-def setup():
+def setup(monkeypatch):
+    monkeypatch.setenv("COFFEE_CLASSIFIER_MODE", "tone")
     broker = FakeBroker()
     with TestClient(service.create_app(lambda: broker)) as client:
         yield client, broker
@@ -145,3 +146,41 @@ def test_processing_over_budget_not_reported_success(setup, monkeypatch):
     assert response.status_code == 504
     assert response.json()['detail']['processing_ms'] > 1000
     assert not broker.messages
+
+
+def test_tone_metadata_reaches_http_and_mqtt(setup):
+    client, broker = setup
+    result = post(client).json()
+    assert result == broker.messages[-1]
+    assert result['classification_basis'] == 'visible_color_tone'
+    assert result['confidence'] is None
+    assert result['requires_review'] is True
+    assert result['warnings']
+    assert client.get('/health').json()['mode'] == 'experimental'
+
+
+def test_legacy_onnx_mode_remains_available(monkeypatch):
+    monkeypatch.setenv('COFFEE_CLASSIFIER_MODE', 'onnx')
+    broker = FakeBroker()
+    with TestClient(service.create_app(lambda: broker)) as client:
+        result = post(client).json()
+        assert result['status'] in ('success', 'test')
+        assert 'classification_basis' not in result
+        assert result == broker.messages[-1]
+
+
+def test_segmentation_metadata_reaches_http_and_mqtt(setup):
+    client, broker = setup
+    classifier = client.app.state.classifier
+    classifier.predict = lambda image: {
+        'status': 'success', 'label': 'no_detection', 'confidence': None,
+        'model_version': 'seg-test', 'inference_ms': 2,
+        'detections': [], 'detection_count': 0, 'mask_polygons': [],
+        'mask_scope': 'highest_confidence_detection', 'confidence_threshold': .25,
+    }
+    result = post(client).json()
+    assert result == broker.messages[-1]
+    assert result['label'] == 'no_detection'
+    assert result['confidence'] is None
+    assert result['detection_count'] == 0
+    assert result['mask_polygons'] == []

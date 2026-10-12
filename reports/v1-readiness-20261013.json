@@ -1,0 +1,26 @@
+{
+  "release": "1.0.0",
+  "ready": {
+    "transport_ready": true,
+    "model_ready": true,
+    "model_version": "yolo26n-seg-rgb-20261013-epoch35-onnx",
+    "mode": "experimental"
+  },
+  "web_http_status": 200,
+  "browser_mqtt_config_http_status": 200,
+  "web_mqtt_subscribe_and_result_verified": true,
+  "api_smoke": {
+    "request_id": "62592a82-8b1e-4857-8844-ecc9da98be1b",
+    "model_version": "yolo26n-seg-rgb-20261013-epoch35-onnx",
+    "label": "dark_roast",
+    "confidence": 0.932014,
+    "confidence_threshold": 0.15,
+    "inference_ms": 189.707,
+    "processing_ms": 216.595,
+    "detection_count": 1
+  },
+  "http_round_trip_ms": 296.87,
+  "model_sha256": "c8975b75c63bda7bf4d86c38b5c442e9c2906210e9e9cace53fb2e5879b92658",
+  "local_tests_passed": 30,
+  "note": "One validation smoke request, not a worst-case or browser-rendering benchmark."
+}

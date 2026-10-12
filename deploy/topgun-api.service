@@ -1,5 +1,5 @@
 [Unit]
-Description=Topgun image API (transport test mode)
+Description=Topgun V1 coffee segmentation API
 Wants=network-online.target
 After=network-online.target
 StartLimitIntervalSec=0
